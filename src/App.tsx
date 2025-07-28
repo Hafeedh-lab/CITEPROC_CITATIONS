@@ -51,76 +51,44 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let papaScript: HTMLScriptElement | null = null;
-    let cslScript: HTMLScriptElement | null = null;
-
-    const loadScripts = () => {
-      // Check if libraries are already loaded from index.html
+    const checkLibraries = () => {
       if ((window as any).CSL && (window as any).Papa) {
         setLibrariesLoaded(true);
         updateStatus('External libraries loaded successfully.', 'success');
-        return;
+        addDebugInfo('CSL and PapaParse are available on the window object.');
+        return true;
       }
-
-      updateStatus('Loading external libraries...', 'info');
-
-      let papaLoaded = !!(window as any).Papa;
-      let cslLoaded = !!(window as any).CSL;
-
-      const checkCompletion = () => {
-        if (papaLoaded && cslLoaded) {
-          setLibrariesLoaded(true);
-          updateStatus('External libraries loaded successfully.', 'success');
-        }
-      };
-
-      // Load PapaParse if not already present
-      if (!papaLoaded) {
-        papaScript = document.createElement('script');
-        papaScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
-        papaScript.async = true;
-        papaScript.onload = () => {
-          addDebugInfo('PapaParse library loaded dynamically.');
-          papaLoaded = true;
-          checkCompletion();
-        };
-        papaScript.onerror = () => {
-          updateStatus('Failed to load PapaParse library. Please check your network connection and refresh.', 'error');
-        };
-        document.body.appendChild(papaScript);
-      }
-
-      // Load CiteProc if not already present
-      if (!cslLoaded) {
-        cslScript = document.createElement('script');
-        cslScript.src = 'https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js';
-        cslScript.async = true;
-        cslScript.onload = () => {
-          addDebugInfo('CiteProc.js library loaded dynamically.');
-          cslLoaded = true;
-          checkCompletion();
-        };
-        cslScript.onerror = () => {
-          updateStatus('Failed to load CiteProc.js library. Please check your network connection and refresh.', 'error');
-        };
-        document.body.appendChild(cslScript);
-      }
-      
-      checkCompletion(); // In case both were already loaded
+      return false;
     };
 
-    loadScripts();
+    if (checkLibraries()) {
+      return; // Exit if libraries are already loaded
+    }
 
-    // Cleanup function to remove scripts if component unmounts
+    updateStatus('Waiting for external libraries to load...', 'info');
+    addDebugInfo('Starting to poll for CSL and PapaParse libraries...');
+
+    const intervalId = setInterval(() => {
+      if (checkLibraries()) {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+      }
+    }, 200); // Check every 200ms
+
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+      if (!librariesLoaded) {
+        addDebugInfo('Library loading timed out after 10 seconds.');
+        updateStatus('Failed to load external libraries. Please check your network connection and refresh the page.', 'error');
+      }
+    }, 10000); // 10-second timeout
+
+    // Cleanup function to clear intervals and timeouts when the component unmounts
     return () => {
-      if (papaScript && papaScript.parentNode) {
-        papaScript.parentNode.removeChild(papaScript);
-      }
-      if (cslScript && cslScript.parentNode) {
-        cslScript.parentNode.removeChild(cslScript);
-      }
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
     };
-  }, [updateStatus, addDebugInfo]);
+  }, [updateStatus, addDebugInfo, librariesLoaded]);
 
 
   const mapSourceType = (rawType: string): string => {
@@ -972,3 +940,17 @@ const App: React.FC = () => {
 };
 
 export default App;
+" code between  and  in the most up-to-date Canvas "src/App.tsx" document above and am asking a query about/based on this code below.
+Instructions to follow:
+  * Don't output/edit the document if the query is Direct/Simple. For example, if the query asks for a simple explanation, output a direct answer.
+  * Make sure to **edit** the document if the query shows the intent of editing the document, in which case output the entire edited document, **not just that section or the edits**.
+    * Don't output the same document/empty document and say that you have edited it.
+    * Don't change unrelated code in the document.
+  * Don't output  and  in your final response.
+  * Any references like "this" or "selected code" refers to the code between  and  tags.
+  * Just acknowledge my request in the introduction.
+  * Make sure to refer to the document as "Canvas" in your response.
+
+file
+These are the files that the user uploaded:
+{"contentFetchId":"uploaded:image_e41712.png-3f1b0a88-299e-473d-b4f0-46654f5c9e43","fileMimeType":"image/png","fileName":"image_e41712.png","fileNameIsCodeAccessible":tr
