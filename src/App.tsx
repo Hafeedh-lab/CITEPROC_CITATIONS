@@ -940,17 +940,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-" code between  and  in the most up-to-date Canvas "src/App.tsx" document above and am asking a query about/based on this code below.
-Instructions to follow:
-  * Don't output/edit the document if the query is Direct/Simple. For example, if the query asks for a simple explanation, output a direct answer.
-  * Make sure to **edit** the document if the query shows the intent of editing the document, in which case output the entire edited document, **not just that section or the edits**.
-    * Don't output the same document/empty document and say that you have edited it.
-    * Don't change unrelated code in the document.
-  * Don't output  and  in your final response.
-  * Any references like "this" or "selected code" refers to the code between  and  tags.
-  * Just acknowledge my request in the introduction.
-  * Make sure to refer to the document as "Canvas" in your response.
-
-file
-These are the files that the user uploaded:
-{"contentFetchId":"uploaded:image_e41712.png-3f1b0a88-299e-473d-b4f0-46654f5c9e43","fileMimeType":"image/png","fileName":"image_e41712.png","fileNameIsCodeAccessible":tr
