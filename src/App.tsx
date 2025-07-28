@@ -41,24 +41,6 @@ const App: React.FC = () => {
   const [librariesLoaded, setLibrariesLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // Check if external libraries are loaded.
-    if ((window as any).CSL && (window as any).Papa) {
-      setLibrariesLoaded(true);
-      updateStatus('External libraries loaded successfully.', 'success');
-    } else {
-        updateStatus('Waiting for external libraries to load...', 'info');
-        const interval = setInterval(() => {
-            if ((window as any).CSL && (window as any).Papa) {
-                setLibrariesLoaded(true);
-                updateStatus('External libraries loaded successfully.', 'success');
-                clearInterval(interval);
-            }
-        }, 500);
-    }
-  }, []);
-
-
   const updateStatus = useCallback((message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
     setStatus({ message, type });
     setDebugInfo(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${type.toUpperCase()}: ${message}`]);
@@ -67,6 +49,79 @@ const App: React.FC = () => {
   const addDebugInfo = useCallback((info: string) => {
     setDebugInfo(prev => [...prev, `[${new Date().toLocaleTimeString()}] DEBUG: ${info}`]);
   }, []);
+
+  useEffect(() => {
+    let papaScript: HTMLScriptElement | null = null;
+    let cslScript: HTMLScriptElement | null = null;
+
+    const loadScripts = () => {
+      // Check if libraries are already loaded from index.html
+      if ((window as any).CSL && (window as any).Papa) {
+        setLibrariesLoaded(true);
+        updateStatus('External libraries loaded successfully.', 'success');
+        return;
+      }
+
+      updateStatus('Loading external libraries...', 'info');
+
+      let papaLoaded = !!(window as any).Papa;
+      let cslLoaded = !!(window as any).CSL;
+
+      const checkCompletion = () => {
+        if (papaLoaded && cslLoaded) {
+          setLibrariesLoaded(true);
+          updateStatus('External libraries loaded successfully.', 'success');
+        }
+      };
+
+      // Load PapaParse if not already present
+      if (!papaLoaded) {
+        papaScript = document.createElement('script');
+        papaScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
+        papaScript.async = true;
+        papaScript.onload = () => {
+          addDebugInfo('PapaParse library loaded dynamically.');
+          papaLoaded = true;
+          checkCompletion();
+        };
+        papaScript.onerror = () => {
+          updateStatus('Failed to load PapaParse library. Please check your network connection and refresh.', 'error');
+        };
+        document.body.appendChild(papaScript);
+      }
+
+      // Load CiteProc if not already present
+      if (!cslLoaded) {
+        cslScript = document.createElement('script');
+        cslScript.src = 'https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js';
+        cslScript.async = true;
+        cslScript.onload = () => {
+          addDebugInfo('CiteProc.js library loaded dynamically.');
+          cslLoaded = true;
+          checkCompletion();
+        };
+        cslScript.onerror = () => {
+          updateStatus('Failed to load CiteProc.js library. Please check your network connection and refresh.', 'error');
+        };
+        document.body.appendChild(cslScript);
+      }
+      
+      checkCompletion(); // In case both were already loaded
+    };
+
+    loadScripts();
+
+    // Cleanup function to remove scripts if component unmounts
+    return () => {
+      if (papaScript && papaScript.parentNode) {
+        papaScript.parentNode.removeChild(papaScript);
+      }
+      if (cslScript && cslScript.parentNode) {
+        cslScript.parentNode.removeChild(cslScript);
+      }
+    };
+  }, [updateStatus, addDebugInfo]);
+
 
   const mapSourceType = (rawType: string): string => {
     if (!rawType || typeof rawType !== 'string') return 'article-journal';
@@ -916,4 +971,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default A
