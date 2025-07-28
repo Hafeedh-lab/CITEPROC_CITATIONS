@@ -879,9 +879,6 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* CDN Scripts */}
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js"></script>
     </div>
   );
 };
