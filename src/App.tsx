@@ -971,4 +971,4 @@ const App: React.FC = () => {
   );
 };
 
-export default A
+export default App;
