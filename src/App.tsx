@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { FileUp, Download, Copy, CheckCircle, AlertCircle, Loader2, ExternalLink, Upload } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { FileUp, Download, Copy, CheckCircle, AlertCircle, Loader2, ExternalLink, Upload, Library } from 'lucide-react';
 
 interface CslItem {
   id: string;
@@ -38,7 +38,26 @@ const App: React.FC = () => {
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
+  const [librariesLoaded, setLibrariesLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check if external libraries are loaded.
+    if ((window as any).CSL && (window as any).Papa) {
+      setLibrariesLoaded(true);
+      updateStatus('External libraries loaded successfully.', 'success');
+    } else {
+        updateStatus('Waiting for external libraries to load...', 'info');
+        const interval = setInterval(() => {
+            if ((window as any).CSL && (window as any).Papa) {
+                setLibrariesLoaded(true);
+                updateStatus('External libraries loaded successfully.', 'success');
+                clearInterval(interval);
+            }
+        }, 500);
+    }
+  }, []);
+
 
   const updateStatus = useCallback((message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
     setStatus({ message, type });
@@ -49,12 +68,12 @@ const App: React.FC = () => {
     setDebugInfo(prev => [...prev, `[${new Date().toLocaleTimeString()}] DEBUG: ${info}`]);
   }, []);
 
-const mapSourceType = (rawType: string): string => {
+  const mapSourceType = (rawType: string): string => {
     if (!rawType || typeof rawType !== 'string') return 'article-journal';
     const type = rawType.toLowerCase().trim();
     const mapping: Record<string, string> = {
       'journal article': 'article-journal',
-      'journal': 'article-journal', // This is the fix
+      'journal': 'article-journal',
       'article': 'article-journal',
       'news article': 'article-newspaper',
       'newspaper': 'article-newspaper',
@@ -74,7 +93,7 @@ const mapSourceType = (rawType: string): string => {
       'review': 'review'
     };
     return mapping[type] || 'webpage';
-};
+  };
 
   const parseAuthors = (authorCell: string): Array<{ family: string; given: string } | { literal: string }> => {
     if (!authorCell || typeof authorCell !== 'string' || !authorCell.trim()) return [];
@@ -133,45 +152,45 @@ const mapSourceType = (rawType: string): string => {
   const createCslItem = (row: CsvRow, index: number): CslItem => {
     const item: CslItem = {
       id: `item_${index + 1}`,
-      type: mapSourceType(row['Source Type'] || '')
+      type: mapSourceType(row['Source Type'] || row['type'] || '')
     };
 
     // Essential fields validation
-    if (row['Title']) {
-      item.title = String(row['Title']).trim();
+    if (row['Title'] || row['title']) {
+      item.title = String(row['Title'] || row['title']).trim();
     } else {
       addDebugInfo(`Item ${index + 1}: Missing title`);
     }
     
-    const authors = parseAuthors(row['Author(s)'] || row['Authors'] || row['Author']);
+    const authors = parseAuthors(row['Author(s)'] || row['Authors'] || row['Author'] || row['author']);
     if (authors.length > 0) {
       item.author = authors;
     } else {
       addDebugInfo(`Item ${index + 1}: No valid authors found`);
     }
 
-    const year = row['Year'] || row['Publication Year'] || row['Date'];
+    const year = row['Year'] || row['Publication Year'] || row['Date'] || row['year'];
     if (year && !isNaN(parseInt(year, 10))) {
       item.issued = { 'date-parts': [[parseInt(year, 10)]] };
     } else {
       addDebugInfo(`Item ${index + 1}: Invalid or missing year: ${year}`);
     }
 
-    const containerTitle = row['Journal'] || row['Publication'] || row['Container Title'] || row['Source'];
+    const containerTitle = row['Journal'] || row['Publication'] || row['Container Title'] || row['Source'] || row['container-title'];
     if (containerTitle) {
       item['container-title'] = String(containerTitle).trim();
     }
 
-    const volIss = parseVolumeIssue(row['Volume'] || row['Volume-Issue'] || '');
+    const volIss = parseVolumeIssue(row['Volume'] || row['Volume-Issue'] || row['volume'] || '');
     if (volIss.volume) item.volume = volIss.volume;
     if (volIss.issue) item.issue = volIss.issue;
-    else if (row['Issue']) item.issue = String(row['Issue']).trim();
+    else if (row['Issue'] || row['issue']) item.issue = String(row['Issue'] || row['issue']).trim();
 
-    const pages = row['Pages'] || row['Page Range'] || row['Page'];
+    const pages = row['Pages'] || row['Page Range'] || row['Page'] || row['page'];
     if (pages) item.page = String(pages).trim();
 
     // Handle DOI/URL
-    const doiField = row['DOI'] || row['DOI/URL'];
+    const doiField = row['DOI'] || row['DOI/URL'] || row['doi'];
     if (doiField) {
       let doi = String(doiField).trim();
       if (doi.startsWith('http')) {
@@ -186,15 +205,15 @@ const mapSourceType = (rawType: string): string => {
       }
     }
     
-    const url = row['URL'];
+    const url = row['URL'] || row['url'];
     if (url && !item.DOI && !item.URL) {
       if (String(url).trim().startsWith('http')) {
         item.URL = String(url).trim();
       }
     }
 
-    if (row['Publisher']) {
-      item.publisher = String(row['Publisher']).trim();
+    if (row['Publisher'] || row['publisher']) {
+      item.publisher = String(row['Publisher'] || row['publisher']).trim();
     }
 
     addDebugInfo(`Created CSL item ${index + 1}: ${JSON.stringify(item, null, 2)}`);
@@ -386,6 +405,11 @@ const mapSourceType = (rawType: string): string => {
       return;
     }
 
+    if (!librariesLoaded) {
+      updateStatus('Citation libraries are still loading. Please wait a moment and try again.', 'error');
+      return;
+    }
+
     setIsLoading(true);
     setResult(null);
     setDebugInfo(['Starting citation generation...']);
@@ -432,11 +456,18 @@ const mapSourceType = (rawType: string): string => {
       const warnings: string[] = [];
       
       if (validItems.length < cslItems.length) {
-        warnings.push(`${cslItems.length - validItems.length} items were skipped due to validation errors`);
+        warnings.push(`${cslItems.length - cslItems.length} items were skipped due to validation errors`);
       }
 
       const finalCsvData = jsonData.map((row, index) => {
-        const citation = citations[index] || 'Error: Could not generate citation.';
+        const correspondingCslItem = cslItems.find(csl => csl.id === `item_${index + 1}`);
+        const validIndex = validItems.findIndex(validItem => validItem.id === correspondingCslItem?.id);
+        
+        let citation = 'Skipped due to validation errors.';
+        if (validIndex !== -1) {
+            citation = citations[validIndex] || 'Error: Could not generate citation.';
+        }
+        
         return { ...row, 'APA 7 Citation': citation };
       });
 
@@ -633,15 +664,17 @@ const mapSourceType = (rawType: string): string => {
             <div className="mt-8">
               <button
                 onClick={handleGeneration}
-                disabled={isLoading || (!gsheetUrl && !csvFile)}
+                disabled={isLoading || !librariesLoaded || (!gsheetUrl && !csvFile)}
                 className="w-full flex justify-center items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : !librariesLoaded ? (
+                  <Library className="w-5 h-5 mr-2 animate-pulse" />
                 ) : (
                   <CheckCircle className="w-5 h-5 mr-2" />
                 )}
-                {isLoading ? 'Generating Citations...' : 'Generate Citations'}
+                {isLoading ? 'Generating Citations...' : !librariesLoaded ? 'Loading Libraries...' : 'Generate Citations'}
               </button>
             </div>
           </div>
