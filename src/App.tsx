@@ -52,10 +52,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkLibraries = () => {
-      if ((window as any).CSL && (window as any).Papa) {
+      const hasCSL = (window as any).CSL || (window as any).citeproc;
+      const hasPapa = (window as any).Papa;
+      
+      if (hasCSL && hasPapa) {
         setLibrariesLoaded(true);
         updateStatus('External libraries loaded successfully.', 'success');
-        addDebugInfo('CSL and PapaParse are available on the window object.');
+        addDebugInfo(`CSL (${(window as any).CSL ? 'CSL' : 'citeproc'}) and PapaParse are available on the window object.`);
         return true;
       }
       return false;
@@ -78,10 +81,22 @@ const App: React.FC = () => {
     const timeoutId = setTimeout(() => {
       clearInterval(intervalId);
       if (!librariesLoaded) {
-        addDebugInfo('Library loading timed out after 10 seconds.');
-        updateStatus('Failed to load external libraries. Please check your network connection and refresh the page.', 'error');
+        addDebugInfo('Library loading timed out after 10 seconds. Attempting manual library check...');
+        
+        // Final attempt to check for libraries with different names
+        const finalCSLCheck = (window as any).CSL || (window as any).citeproc || (window as any).CiteprocEngine;
+        const finalPapaCheck = (window as any).Papa;
+        
+        if (finalCSLCheck && finalPapaCheck) {
+          setLibrariesLoaded(true);
+          updateStatus('External libraries loaded successfully (after retry).', 'success');
+          addDebugInfo('Libraries found on final check.');
+        } else {
+          updateStatus('Failed to load external libraries. Please check your network connection and refresh the page.', 'error');
+          addDebugInfo(`Final check - CSL: ${!!finalCSLCheck}, Papa: ${!!finalPapaCheck}`);
+        }
       }
-    }, 10000); // 10-second timeout
+    }, 15000); // 15-second timeout
 
     // Cleanup function to clear intervals and timeouts when the component unmounts
     return () => {
@@ -275,7 +290,8 @@ const App: React.FC = () => {
       addDebugInfo(`Initializing CSL engine with ${cslItems.length} items`);
       
       // Check if CSL is available
-      if (typeof (window as any).CSL === 'undefined') {
+      const CSLEngine = (window as any).CSL || (window as any).citeproc || (window as any).CiteprocEngine;
+      if (typeof CSLEngine === 'undefined') {
         throw new Error('CSL library not loaded. Please refresh the page and try again.');
       }
       
@@ -299,8 +315,7 @@ const App: React.FC = () => {
       // Initialize CSL engine with error handling
       let engine;
       try {
-        // @ts-ignore - CSL is loaded via CDN and checked above
-        engine = new (window as any).CSL.Engine(sys, cslStyle);
+        engine = new CSLEngine.Engine(sys, cslStyle);
         addDebugInfo('CSL engine initialized successfully');
       } catch (engineError) {
         addDebugInfo(`CSL engine initialization failed: ${engineError}`);
@@ -367,13 +382,13 @@ const App: React.FC = () => {
   const parseCsv = (csvText: string): Promise<CsvRow[]> => {
     return new Promise((resolve, reject) => {
       // Check if Papa is available
-      if (typeof (window as any).Papa === 'undefined') {
+      const Papa = (window as any).Papa;
+      if (typeof Papa === 'undefined') {
         reject(new Error('CSV parsing library not loaded. Please refresh the page and try again.'));
         return;
       }
       
-      // @ts-ignore - Papa is loaded via CDN
-      (window as any).Papa.parse(csvText, {
+      Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
         transformHeader: (header: string) => header.trim(),
@@ -540,13 +555,13 @@ const App: React.FC = () => {
     }
     
     // Check if Papa is available
-    if (typeof (window as any).Papa === 'undefined') {
+    const Papa = (window as any).Papa;
+    if (typeof Papa === 'undefined') {
       updateStatus('CSV export library not loaded. Please refresh the page and try again.', 'error');
       return;
     }
     
-    // @ts-ignore - Papa is loaded via CDN
-    const csv = (window as any).Papa.unparse(result.csvData);
+    const csv = Papa.unparse(result.csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);

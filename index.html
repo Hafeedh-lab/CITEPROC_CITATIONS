@@ -9,9 +9,33 @@
   <body>
     <div id="root"></div>
     <!-- External Libraries - Load before main script to ensure availability -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js" crossorigin="anonymous"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js" crossorigin="anonymous" onerror="loadPapaFallback()"></script>
+    <script src="https://unpkg.com/citeproc@2.4.62/citeproc_commonjs.js" crossorigin="anonymous" onerror="loadCSLFallback()"></script>
     
+    <!-- Fallback loading script -->
+    <script>
+      function loadPapaFallback() {
+        console.log('Primary PapaParse CDN failed, trying fallback...');
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js';
+        script.crossOrigin = 'anonymous';
+        script.onerror = function() {
+          console.error('All PapaParse CDNs failed');
+        };
+        document.head.appendChild(script);
+      }
+      
+      function loadCSLFallback() {
+        console.log('Primary CSL CDN failed, trying fallback...');
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/citeproc/2.4.62/citeproc.min.js';
+        script.crossOrigin = 'anonymous';
+        script.onerror = function() {
+          console.error('All CSL CDNs failed');
+        };
+        document.head.appendChild(script);
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
