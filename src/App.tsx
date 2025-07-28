@@ -232,6 +232,11 @@ const App: React.FC = () => {
     try {
       addDebugInfo(`Initializing CSL engine with ${cslItems.length} items`);
       
+      // Check if CSL is available
+      if (typeof (window as any).CSL === 'undefined') {
+        throw new Error('CSL library not loaded. Please refresh the page and try again.');
+      }
+      
       // Validate and clean CSL style
       if (!cslStyle || !cslStyle.includes('<style')) {
         throw new Error('Invalid CSL style: not a valid XML document');
@@ -252,8 +257,8 @@ const App: React.FC = () => {
       // Initialize CSL engine with error handling
       let engine;
       try {
-        // @ts-ignore - CSL is loaded via CDN
-        engine = new CSL.Engine(sys, cslStyle);
+        // @ts-ignore - CSL is loaded via CDN and checked above
+        engine = new (window as any).CSL.Engine(sys, cslStyle);
         addDebugInfo('CSL engine initialized successfully');
       } catch (engineError) {
         addDebugInfo(`CSL engine initialization failed: ${engineError}`);
@@ -319,8 +324,14 @@ const App: React.FC = () => {
 
   const parseCsv = (csvText: string): Promise<CsvRow[]> => {
     return new Promise((resolve, reject) => {
+      // Check if Papa is available
+      if (typeof (window as any).Papa === 'undefined') {
+        reject(new Error('CSV parsing library not loaded. Please refresh the page and try again.'));
+        return;
+      }
+      
       // @ts-ignore - Papa is loaded via CDN
-      Papa.parse(csvText, {
+      (window as any).Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
         transformHeader: (header: string) => header.trim(),
@@ -474,8 +485,14 @@ const App: React.FC = () => {
       return;
     }
     
+    // Check if Papa is available
+    if (typeof (window as any).Papa === 'undefined') {
+      updateStatus('CSV export library not loaded. Please refresh the page and try again.', 'error');
+      return;
+    }
+    
     // @ts-ignore - Papa is loaded via CDN
-    const csv = Papa.unparse(result.csvData);
+    const csv = (window as any).Papa.unparse(result.csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -650,6 +667,105 @@ const App: React.FC = () => {
         {/* Results Section */}
         {result && (
           <div className="space-y-6">
+            {/* APA Citation Guide */}
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">APA 7th Edition Citation Examples</h3>
+              <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Quick Reference:</strong> Use these examples to format your citations correctly. 
+                  For personal communications (interviews), include only in-text citations—not in the reference list.
+                </p>
+              </div>
+              
+              <div className="space-y-6 text-sm">
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">1. Journal Article</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Recent research indicates a significant correlation between sleep quality and cognitive performance (Okonjo & Adebayo, 2024).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> Okonjo and Adebayo (2024) found that "prolonged sleep deprivation led to a measurable decline in executive function" (p. 112).</p>
+                  <p><strong>Reference:</strong> Okonjo, C. I., & Adebayo, F. A. (2024). The impact of sleep patterns on cognitive function in young adults. <em>Nigerian Journal of Health Sciences</em>, <em>15</em>(2), 105–119. https://doi.org/10.1234/njhs.2024.15.2.105</p>
+                </div>
+
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">2. Book</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> The historical development of West African trade routes was complex and influenced by numerous external factors (Abubakar, 2023).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> Abubakar (2023) notes that "the introduction of the camel was a pivotal moment for trans-Saharan commerce" (p. 47).</p>
+                  <p><strong>Reference:</strong> Abubakar, Z. (2023). <em>A history of West African trade: From ancient empires to the colonial era</em>. University of Lagos Press.</p>
+                </div>
+
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">3. Chapter in an Edited Book</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Digital literacy is now considered a fundamental skill for navigating modern information ecosystems (Eze & Bello, 2025).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> According to Eze and Bello (2025), "the ability to critically evaluate online sources is paramount for civic engagement" (p. 215).</p>
+                  <p><strong>Reference:</strong> Eze, A. N., & Bello, S. K. (2025). Cultivating digital literacy in the 21st century. In O. C. Nwosu (Ed.), <em>Modern education: Challenges and opportunities</em> (pp. 201–225). ABU Press.</p>
+                </div>
+
+                <div className="border-l-4 border-orange-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">4. Webpage (Individual Author)</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> The latest agricultural techniques are helping to improve crop yields across the continent (Dauda, 2025).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> Dauda (2025) explained that "drip irrigation technology has reduced water consumption by up to 60% in arid regions" (para. 4).</p>
+                  <p><strong>Reference:</strong> Dauda, H. (2025, May 19). <em>Sustainable farming innovations in Africa</em>. AgriInnovate Africa. https://www.agriinnovateafrica.com/sustainable-farming-innovations</p>
+                </div>
+
+                <div className="border-l-4 border-red-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">5. Webpage (Group/Organizational Author)</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Preventative measures and public awareness campaigns are crucial for managing public health crises (World Health Organization, 2024).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> The World Health Organization (2024) states that "timely and accurate information sharing is the cornerstone of an effective pandemic response" (p. 2).</p>
+                  <p><strong>Reference:</strong> World Health Organization. (2024, January 22). <em>Global pandemic preparedness strategy</em>. https://www.who.int/publications/m/item/global-pandemic-preparedness-strategy</p>
+                </div>
+
+                <div className="border-l-4 border-indigo-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">6. Government/Organization Report</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Recent economic data suggests a steady growth in the technology sector (National Bureau of Statistics, 2024).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> The report from the National Bureau of Statistics (2024) highlighted that "foreign direct investment in fintech grew by 15% in the last fiscal year" (p. 18).</p>
+                  <p><strong>Reference:</strong> National Bureau of Statistics. (2024). <em>Annual economic report: Technology sector analysis</em> (NBS Publication No. 2024-08). https://www.nigerianstat.gov.ng/elibrary/read/12345</p>
+                </div>
+
+                <div className="border-l-4 border-pink-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">7. Business School Case Study</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Market entry strategies for emerging economies often require significant adaptation of existing business models (Chukwuemeka & Ikenna, 2024).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> The note emphasizes that "local partnerships are critical for navigating regulatory and cultural landscapes" (Chukwuemeka & Ikenna, 2024, p. 5).</p>
+                  <p><strong>Reference:</strong> Chukwuemeka, A., & Ikenna, M. (2024). <em>Navigating the Nigerian consumer market</em> (HBS Background Note 724-035). Harvard Business School.</p>
+                </div>
+
+                <div className="border-l-4 border-teal-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">8. Online News Article</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> The Nigerian government recently announced new policies to support the local technology startup ecosystem (Adekunle, 2025).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> Adekunle (2025) reported that the Minister of Communications and Digital Economy promised "a N10 billion fund to be disbursed over the next three years" (para. 3).</p>
+                  <p><strong>Reference:</strong> Adekunle, A. (2025, July 26). Tech startups to receive new government funding. <em>The Guardian Nigeria</em>. https://guardian.ng/news/tech-startups-to-receive-new-government-funding/</p>
+                </div>
+
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">9. Online Magazine Article</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Effective leadership in a hybrid work environment requires a new set of communication and empathy skills (Okoro, 2024).</p>
+                  <p><strong>In-Text (Direct Quote):</strong> Okoro (2024) argues, "Leaders must now be more intentional about creating connection and trust with team members who they may rarely see in person."</p>
+                  <p><strong>Reference:</strong> Okoro, C. (2024, May). Leading from a distance: How to manage a hybrid team effectively. <em>Harvard Business Review</em>. https://hbr.org/2024/05/leading-from-a-distance-how-to-manage-a-hybrid-team-effectively</p>
+                </div>
+
+                <div className="border-l-4 border-gray-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">10. Dissertation/Thesis</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> Olawale's (2023) research explored the sociolinguistic impact of pidgin English in Nigerian media.</p>
+                  <p><strong>Reference:</strong> Olawale, T. A. (2023). <em>The evolution and influence of Nigerian Pidgin English in contemporary media</em> (Publication No. 30538989) [Doctoral dissertation, University of Ibadan]. ProQuest Dissertations and Theses Global.</p>
+                </div>
+
+                <div className="border-l-4 border-cyan-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">11. Online Video</h4>
+                  <p><strong>In-Text (Paraphrase):</strong> The process of creating traditional Yoruba textiles involves intricate dyeing and weaving techniques (Ademola, 2022).</p>
+                  <p><strong>In-Text (Direct Quote with Timestamp):</strong> Ademola (2022) demonstrates how "the adire-eleko patterns are meticulously hand-painted with a cassava starch paste" (1:45).</p>
+                  <p><strong>Reference:</strong> Ademola, K. [ArtisanKehinde]. (2022, November 3). <em>The art of Adire: Creating Yoruba textiles</em> [Video]. YouTube. https://www.youtube.com/watch?v=examplevideo</p>
+                </div>
+
+                <div className="border-l-4 border-rose-500 pl-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">12. Personal Communication/Interview</h4>
+                  <div className="bg-amber-50 rounded p-3 mb-2">
+                    <p className="text-amber-800 text-xs"><strong>Note:</strong> Personal communications are cited in-text only and do NOT appear in the reference list because they are not recoverable by readers.</p>
+                  </div>
+                  <p><strong>In-Text (Paraphrase):</strong> Several local logistics companies are adopting AI-powered route optimization to reduce delivery times and fuel consumption (J. Adebayo, personal communication, July 15, 2025).</p>
+                  <p><strong>In-Text (Mentioning the person):</strong> According to Johnson Adebayo, the Chief Operating Officer of a major Lagos-based logistics firm, the technology has led to a 20% increase in efficiency (personal communication, July 15, 2025).</p>
+                  <p><strong>Reference:</strong> <em>(Not included in the reference list)</em></p>
+                </div>
+              </div>
+            </div>
+
             {/* Summary */}
             <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Generation Summary</h3>

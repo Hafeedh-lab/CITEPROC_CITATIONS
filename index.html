@@ -9,8 +9,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js"></script>
+    <!-- External Libraries - Load synchronously to ensure availability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/citeproc@2.4.62/citeproc.js" crossorigin="anonymous"></script>
+    
+    <!-- Verify libraries are loaded -->
+    <script>
+      window.addEventListener('load', function() {
+        if (typeof Papa === 'undefined') {
+          console.error('PapaParse library failed to load');
+        }
+        if (typeof CSL === 'undefined') {
+          console.error('CSL library failed to load');
+        }
+      });
+    </script>
   </body>
 </html>
