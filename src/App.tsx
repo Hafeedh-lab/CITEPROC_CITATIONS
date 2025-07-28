@@ -49,12 +49,12 @@ const App: React.FC = () => {
     setDebugInfo(prev => [...prev, `[${new Date().toLocaleTimeString()}] DEBUG: ${info}`]);
   }, []);
 
-  const mapSourceType = (rawType: string): string => {
+const mapSourceType = (rawType: string): string => {
     if (!rawType || typeof rawType !== 'string') return 'article-journal';
     const type = rawType.toLowerCase().trim();
     const mapping: Record<string, string> = {
       'journal article': 'article-journal',
-      'journal': 'article-journal',
+      'journal': 'article-journal', // This is the fix
       'article': 'article-journal',
       'news article': 'article-newspaper',
       'newspaper': 'article-newspaper',
@@ -74,7 +74,7 @@ const App: React.FC = () => {
       'review': 'review'
     };
     return mapping[type] || 'webpage';
-  };
+};
 
   const parseAuthors = (authorCell: string): Array<{ family: string; given: string } | { literal: string }> => {
     if (!authorCell || typeof authorCell !== 'string' || !authorCell.trim()) return [];
